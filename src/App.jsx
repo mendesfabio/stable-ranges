@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchPoolData, fetchAmp, processPoolData, POOLS } from './api';
-import { getSpotPrice, getBalancesForGhoPercent } from './stableMath';
+import { getSpotPrice, getBalancesForGhoPercent, AMP_PRECISION } from './stableMath';
 import StatsBar from './components/StatsBar';
 import PriceCurveTab from './components/PriceCurveTab';
 import PriceRangeTable from './components/PriceRangeTable';
@@ -11,12 +11,15 @@ const TABS = ['Price Curve', 'Price Table', 'Spot Price'];
 function App() {
   const [poolIdx, setPoolIdx] = useState(0);
   const [pool, setPool] = useState(null);
-  const [amp, setAmp] = useState(null);
+  const [amp, setAmp] = useState(null); // BigInt (raw, includes AMP_PRECISION)
   const [refIndex, setRefIndex] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [error, setError] = useState(null);
   const [ampError, setAmpError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Display-friendly amp value (Number)
+  const ampDisplay = amp != null ? Number(amp / AMP_PRECISION) : null;
 
   const loadData = useCallback(async (idx) => {
     const { id, chain } = POOLS[idx];
@@ -39,7 +42,7 @@ function App() {
       } catch (e) {
         console.error('AMP fetch failed:', e);
         setAmpError(e.message);
-        setAmp(200);
+        setAmp(200n * AMP_PRECISION); // fallback A=200
       }
     } catch (e) {
       console.error('Pool data fetch failed:', e);
@@ -72,7 +75,7 @@ function App() {
     if (!pool || amp == null || refIndex == null) return null;
     const result = {};
     for (const qt of quoteTokens) {
-      result[qt.symbol] = getSpotPrice(amp, pool.underlyingBalances, refIndex, qt.index);
+      result[qt.symbol] = getSpotPrice(amp, pool.liveBalances, refIndex, qt.index, pool.swapFeeWad);
     }
     return result;
   }, [pool, amp, refIndex, quoteTokens]);
@@ -80,16 +83,15 @@ function App() {
   // Compute price sweep data
   const sweepData = useMemo(() => {
     if (!pool || amp == null || refIndex == null) return null;
-    const { totalUnderlying } = pool;
     const otherIndices = quoteTokens.map((q) => q.index);
 
     const points = [];
     for (let pct = 5; pct <= 90; pct += 1) {
       const frac = pct / 100;
-      const balances = getBalancesForGhoPercent(totalUnderlying, frac, refIndex, otherIndices, pool.underlyingBalances);
+      const balances = getBalancesForGhoPercent(pool.totalLive, frac, refIndex, otherIndices, pool.liveBalances);
       const point = { refPct: pct };
       for (const qt of quoteTokens) {
-        point[qt.symbol] = getSpotPrice(amp, balances, refIndex, qt.index);
+        point[qt.symbol] = getSpotPrice(amp, balances, refIndex, qt.index, pool.swapFeeWad);
       }
       points.push(point);
     }
@@ -99,14 +101,13 @@ function App() {
   // Compute band widths for each quote token
   const bandData = useMemo(() => {
     if (!pool || amp == null || refIndex == null) return null;
-    const { totalUnderlying } = pool;
     const otherIndices = quoteTokens.map((q) => q.index);
 
     const result = {};
     for (const qt of quoteTokens) {
       const getPrice = (pct) => {
-        const balances = getBalancesForGhoPercent(totalUnderlying, pct, refIndex, otherIndices, pool.underlyingBalances);
-        return getSpotPrice(amp, balances, refIndex, qt.index);
+        const balances = getBalancesForGhoPercent(pool.totalLive, pct, refIndex, otherIndices, pool.liveBalances);
+        return getSpotPrice(amp, balances, refIndex, qt.index, pool.swapFeeWad);
       };
       const at5 = getPrice(0.05);
       const at90 = getPrice(0.90);
@@ -122,17 +123,16 @@ function App() {
   // Price table data
   const tableData = useMemo(() => {
     if (!pool || amp == null || refIndex == null) return null;
-    const { totalUnderlying } = pool;
     const otherIndices = quoteTokens.map((q) => q.index);
 
     const breakpoints = [];
     for (let p = 5; p <= 50; p += 5) breakpoints.push(p);
     return breakpoints.map((pct) => {
       const frac = pct / 100;
-      const balances = getBalancesForGhoPercent(totalUnderlying, frac, refIndex, otherIndices, pool.underlyingBalances);
+      const balances = getBalancesForGhoPercent(pool.totalLive, frac, refIndex, otherIndices, pool.liveBalances);
       const row = { pct };
       for (const qt of quoteTokens) {
-        row[qt.symbol] = getSpotPrice(amp, balances, refIndex, qt.index);
+        row[qt.symbol] = getSpotPrice(amp, balances, refIndex, qt.index, pool.swapFeeWad);
       }
       return row;
     });
@@ -217,12 +217,12 @@ function App() {
           tvl={pool.tvl}
           refPct={refPct}
           refSymbol={refSymbol}
-          amp={amp}
+          amp={ampDisplay}
           spotPrices={spotPrices}
           quoteTokens={quoteTokens}
           swapFee={pool.swapFee}
           ampError={ampError}
-          onManualAmp={setAmp}
+          onManualAmp={(val) => setAmp(BigInt(val) * AMP_PRECISION)}
         />
 
         {/* Tabs */}
