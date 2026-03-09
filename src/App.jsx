@@ -84,7 +84,7 @@ function App() {
     const otherIndices = quoteTokens.map((q) => q.index);
 
     const points = [];
-    for (let pct = 5; pct <= 50; pct += 1) {
+    for (let pct = 5; pct <= 90; pct += 1) {
       const frac = pct / 100;
       const balances = getBalancesForGhoPercent(totalUnderlying, frac, refIndex, otherIndices, pool.underlyingBalances);
       const point = { refPct: pct };
@@ -109,11 +109,11 @@ function App() {
         return getSpotPrice(amp, balances, refIndex, qt.index);
       };
       const at5 = getPrice(0.05);
-      const at50 = getPrice(0.50);
+      const at90 = getPrice(0.90);
       result[qt.symbol] = {
-        low: Math.min(at5, at50),
-        high: Math.max(at5, at50),
-        width: Math.abs(at5 - at50),
+        low: Math.min(at5, at90),
+        high: Math.max(at5, at90),
+        width: Math.abs(at5 - at90),
       };
     }
     return result;

@@ -21,7 +21,7 @@ function PriceChart({ data, dataKey, nearestPct, title, color, yMin, yMax, refSy
           <XAxis
             dataKey="refPct"
             type="number"
-            domain={[5, 50]}
+            domain={[5, 90]}
             label={{ value: `${refSymbol} % of Pool`, position: 'insideBottom', offset: -10, fill: '#9CA3AF' }}
             tick={{ fill: '#9CA3AF', fontSize: 12 }}
             tickFormatter={(v) => `${v}%`}
