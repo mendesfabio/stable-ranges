@@ -29,12 +29,12 @@ function PriceChart({ data, dataKey, nearestPct, title, color, yMin, yMax, refSy
           <YAxis
             domain={[yMin, yMax]}
             tick={{ fill: '#9CA3AF', fontSize: 12 }}
-            tickFormatter={(v) => `$${v.toFixed(4)}`}
+            tickFormatter={(v) => v.toFixed(4)}
           />
           <Tooltip
             contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
             labelFormatter={(v) => `${refSymbol}: ${v}%`}
-            formatter={(value) => [`$${value.toFixed(6)}`]}
+            formatter={(value) => [value.toFixed(6)]}
           />
           <ReferenceLine
             x={nearestPct}
@@ -46,7 +46,7 @@ function PriceChart({ data, dataKey, nearestPct, title, color, yMin, yMax, refSy
             y={1.0}
             stroke="#6B7280"
             strokeDasharray="4 4"
-            label={{ value: '$1.00', fill: '#6B7280', position: 'right', fontSize: 12 }}
+            label={{ value: '1.00', fill: '#6B7280', position: 'right', fontSize: 12 }}
           />
           <Line
             type="monotone"

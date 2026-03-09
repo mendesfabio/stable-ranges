@@ -1,6 +1,6 @@
 export function formatPrice(value) {
   if (value == null || isNaN(value)) return '—';
-  return `$${value.toFixed(6)}`;
+  return value.toFixed(6);
 }
 
 export function formatBalance(value) {
@@ -23,7 +23,7 @@ export function formatSwapFee(value) {
 
 export function formatTvl(value) {
   if (value == null || isNaN(value)) return '—';
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
-  return `$${value.toFixed(0)}`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toFixed(0);
 }
